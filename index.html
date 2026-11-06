@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>A2O 知識問答</title>
+<style>
+  :root {
+    --bg: #0b0f1a;
+    --panel: #121827;
+    --panel-2: #1a2338;
+    --ink: #e8edf7;
+    --muted: #94a3c4;
+    --accent: #6ea8ff;
+    --accent-2: #9d7bff;
+    --line: rgba(255,255,255,0.08);
+    --user: #1e4f8a;
+    --bot: #1a2338;
+    --ok: #34d399;
+    --err: #f87171;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: "Noto Sans TC", -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+    background: radial-gradient(1000px 600px at 20% -10%, #17223f 0%, var(--bg) 55%);
+    min-height:100vh; color:var(--ink);
+    display:flex; align-items:center; justify-content:center; padding:28px;
+  }
+
+  .app {
+    width:100%; max-width:760px; height:min(88vh, 820px);
+    background:var(--panel); border:1px solid var(--line); border-radius:24px;
+    display:flex; flex-direction:column; overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.45);
+  }
+
+  /* ---- header ---- */
+  .head {
+    padding:22px 26px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:16px;
+    background:linear-gradient(180deg, var(--panel-2), transparent);
+  }
+  .logo {
+    width:46px; height:46px; border-radius:14px; flex:none;
+    background:linear-gradient(135deg, var(--accent), var(--accent-2));
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:20px; color:#fff; letter-spacing:.5px;
+  }
+  .head h1 { font-size:18px; font-weight:700; }
+  .head p { font-size:12.5px; color:var(--muted); margin-top:2px; }
+  .head .status { margin-left:auto; font-size:12px; color:var(--muted); display:flex; align-items:center; gap:7px; }
+  .status .dot { width:8px; height:8px; border-radius:50%; background:var(--muted); }
+  .status .dot.ready { background:var(--ok); box-shadow:0 0 8px var(--ok); }
+
+  /* ---- messages ---- */
+  .chat { flex:1; overflow-y:auto; padding:24px; display:flex; flex-direction:column; gap:16px; }
+  .chat::-webkit-scrollbar { width:8px; }
+  .chat::-webkit-scrollbar-thumb { background:rgba(255,255,255,.12); border-radius:8px; }
+
+  .msg { display:flex; gap:12px; max-width:88%; animation:pop .25s ease; }
+  .msg.user { align-self:flex-end; flex-direction:row-reverse; }
+  .msg .avatar {
+    width:32px; height:32px; border-radius:10px; flex:none;
+    display:flex; align-items:center; justify-content:center; font-size:15px;
+  }
+  .msg.bot .avatar { background:var(--panel-2); border:1px solid var(--line); }
+  .msg.user .avatar { background:var(--accent); }
+  .msg .bubble {
+    padding:13px 16px; border-radius:16px; font-size:14.5px; line-height:1.65;
+    white-space:pre-wrap; word-break:break-word;
+  }
+  .msg.bot .bubble { background:var(--bot); border:1px solid var(--line); border-top-left-radius:4px; }
+  .msg.user .bubble { background:var(--user); border-top-right-radius:4px; }
+
+  .msg .loading { display:flex; gap:5px; padding:6px 2px; }
+  .msg .loading i { width:7px; height:7px; border-radius:50%; background:var(--muted); animation:blink 1.2s infinite; }
+  .msg .loading i:nth-child(2){ animation-delay:.2s; } .msg .loading i:nth-child(3){ animation-delay:.4s; }
+
+  .notice { font-size:12.5px; color:var(--muted); text-align:center; padding:4px; }
+
+  /* ---- input ---- */
+  .input {
+    padding:18px 22px 22px; border-top:1px solid var(--line); background:var(--panel);
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .keyrow { display:flex; gap:10px; align-items:center; }
+  .keyrow label { font-size:12px; color:var(--muted); flex:none; }
+  #apikey {
+    flex:1; background:var(--panel-2); border:1px solid var(--line); color:var(--ink);
+    padding:10px 14px; border-radius:12px; font-size:13px; font-family:ui-monospace,Menlo,monospace;
+    outline:none; transition:border .2s;
+  }
+  #apikey:focus { border-color:var(--accent); }
+  #savekey {
+    background:transparent; border:1px solid var(--line); color:var(--muted);
+    padding:9px 14px; border-radius:12px; font-size:13px; cursor:pointer; transition:.2s; white-space:nowrap;
+  }
+  #savekey:hover { color:var(--ink); border-color:var(--accent); }
+
+  .say { display:flex; gap:10px; }
+  #input {
+    flex:1; background:var(--panel-2); border:1px solid var(--line); color:var(--ink);
+    padding:14px 16px; border-radius:14px; font-size:14.5px; outline:none; resize:none; min-height:52px;
+    font-family:inherit; transition:border .2s;
+  }
+  #input:focus { border-color:var(--accent); }
+  #send {
+    flex:none; width:52px; border-radius:14px; border:none; cursor:pointer;
+    background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:#fff;
+    font-size:20px; transition:transform .15s, opacity .2s; display:flex; align-items:center; justify-content:center;
+  }
+  #send:hover { transform:translateY(-1px); }
+  #send:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+  .hint { font-size:11.5px; color:var(--muted); text-align:center; }
+
+  @keyframes pop { from{ opacity:0; transform:translateY(6px);} }
+  @keyframes blink { 0%,80%,100%{opacity:.25} 40%{opacity:1} }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="head">
+    <div class="logo">A</div>
+    <div>
+      <h1>A2O 知識問答</h1>
+      <p>新人須知・報價流程・退換貨辦法</p>
+    </div>
+    <div class="status" id="status"><span class="dot"></span><span id="statusText">尚未啟用</span></div>
+  </div>
+
+  <div class="chat" id="chat">
+    <div class="notice">以下是 A2O 內部政策問答機器人。請先在上方輸入 Groq API Key 開始使用。</div>
+  </div>
+
+  <div class="input">
+    <div class="keyrow">
+      <label for="apikey">Groq API Key</label>
+      <input type="password" id="apikey" placeholder="gsk_..." autocomplete="off" />
+      <button id="savekey">儲存</button>
+    </div>
+    <div class="say">
+      <textarea id="input" placeholder="請輸入問題，例如：業務可以給幾折？…"></textarea>
+      <button id="send" title="送出">➤</button>
+    </div>
+    <div class="hint">問答由 Groq LLM 驅動，僅你的 Key 授權，Key 儲存在本機瀏覽器。</div>
+  </div>
+</div>
+
+<script>
+// ============ A2O 知識庫（僅使用現行版本） ============
+const KNOWLEDGE = `
+【A2O 新人須知｜2026版】
+上班時間 08:30–17:30，午休 12:00–13:00。
+請假在人資系統線上申請，前一天下班前送出；臨時病假當天 09:00 前打給主管。
+
+【客戶詢問怎麼接】
+一般詢問：1 個工作天內回覆。
+客訴：4 個工作小時內先回第一封，說明已收到、誰負責、何時再回。
+所有詢問都要登記在案件庫，寫清楚客戶、產品、狀態。
+
+【報價權限】
+業務可以給到牌價 95 折。
+低於 95 折，或單筆金額超過新台幣 50 萬元，要業務課長核准。
+海外報價一律經業務課長。
+詳細步驟看「報價流程.md」。
+
+【報價流程】
+步驟：1.確認客戶要的型號、數量、交貨地點、希望時間 2.查牌價表算出報價 3.折扣在權限內→業務直接出報價單 4.折扣超過權限→送業務課長核准後再出 5.報價單寄出後在案件庫改狀態「已回覆」。
+折扣權限：業務牌價 95 折以內；低於 95 折或單筆超過新台幣 50 萬元→業務課長核准；海外報價一律業務課長，涉及認證同時給品保課確認。
+報價單有效期 30 天。交期寫「訂單確認後由業務回覆」，不寫死日期。
+
+【退換貨】
+收貨 14 天內可申請。
+可退換：未拆封未安裝→可退貨全額退款；產品瑕疵（端子鬆脫、線材破皮）→換新品運費公司負擔；少零件→補寄零件不用寄回整組。
+不可退換：已安裝、非產品瑕疵（買錯規格）；人為損壞、未依說明書安裝。
+包裝破損：簽收當場拍照，3 天內通報業務或客服；超過 3 天由物流課判斷。
+誰能答應：第2節內客服可直接答應；第2節外（免費到府、賠償）要主管核准。
+
+【對外承諾】
+交期、認證、保固只能照公司文件講，文件沒寫的不要自己答應。
+免費到府、賠償、折讓、「保證」這類承諾，一律要主管核准，不可以先答應客戶。
+產品對外說法以「產品母稿」為準。
+
+【客訴回覆三段式】
+1.先接住情緒：謝謝告知、造成困擾很抱歉 2.再說明處理：需要客戶提供什麼、我們會怎麼做 3.最後留窗口：誰負責、什麼時候再回。
+
+【找誰】
+規格、認證、品質：品保課 王課長。
+價格、交期、報價核准：業務課 周課長。
+退換貨、出貨：物流課 江組長。
+`;
+
+const SYSTEM_PROMPT = `你是 A2O（虛構精密零組件廠）的內部客服知識問答機器人。請只根據下列知識庫回答，若知識庫沒提到，請說明「這部分公司文件沒有寫，請以主管或相關單位回覆為準」，不要自行編造。回答簡潔、條列分明，用繁體中文。
+
+${KNOWLEDGE}`;
+
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+const GROQ_MODEL = "llama-3.3-70b-versatile";
+
+// ============ 狀態 ============
+let apiKey = localStorage.getItem("groq_api_key") || "";
+let history = [];
+
+const $ = id => document.getElementById(id);
+const chat = $("chat"), statusDot = $("status").querySelector(".dot"), statusText = $("statusText");
+const keyInput = $("apikey"), saveBtn = $("savekey"), inputBox = $("input"), sendBtn = $("send");
+
+if (apiKey) { keyInput.value = apiKey; setStatus(true); }
+else setStatus(false);
+
+function setStatus(ok){
+  statusDot.classList.toggle("ready", ok);
+  statusText.textContent = ok ? "已啟用" : "尚未啟用";
+}
+
+saveBtn.addEventListener("click", ()=>{
+  const k = keyInput.value.trim();
+  if (!k) return;
+  apiKey = k;
+  localStorage.setItem("groq_api_key", k);
+  setStatus(true);
+  addMsg("bot", "✅ API Key 已儲存在本機。開始問我吧！");
+});
+
+function addMsg(role, text){
+  const m = document.createElement("div");
+  m.className = "msg " + role;
+  const avatar = document.createElement("div"); avatar.className = "avatar";
+  avatar.textContent = role === "user" ? "你" : "A";
+  const bubble = document.createElement("div"); bubble.className = "bubble";
+  bubble.textContent = text;
+  m.appendChild(avatar); m.appendChild(bubble);
+  chat.appendChild(m);
+  chat.scrollTop = chat.scrollHeight;
+  return m;
+}
+
+function addLoading(){
+  const m = document.createElement("div");
+  m.className = "msg bot";
+  const avatar = document.createElement("div"); avatar.className = "avatar"; avatar.textContent = "A";
+  const bubble = document.createElement("div"); bubble.className = "bubble";
+  bubble.innerHTML = '<span class="loading"><i></i><i></i><i></i></span>';
+  m.appendChild(avatar); m.appendChild(bubble);
+  chat.appendChild(m); chat.scrollTop = chat.scrollHeight;
+  return m;
+}
+
+async function ask(){
+  const text = inputBox.value.trim();
+  if (!text) return;
+  if (!apiKey){ addMsg("bot","⚠️ 請先輸入 Groq API Key 並按「儲存」。"); return; }
+
+  addMsg("user", text);
+  inputBox.value = "";
+  const loading = addLoading();
+  sendBtn.disabled = true;
+
+  history.push({ role:"user", content:text });
+  const messages = [{ role:"system", content:SYSTEM_PROMPT }, ...history.slice(-12)];
+
+  try{
+    const res = await fetch(GROQ_URL, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json", "Authorization":"Bearer " + apiKey },
+      body: JSON.stringify({ model:GROQ_MODEL, messages, temperature:0.3 })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || "HTTP " + res.status);
+    const reply = data.choices[0].message.content.trim();
+    history.push({ role:"assistant", content:reply });
+    loading.remove();
+    addMsg("bot", reply);
+  }catch(e){
+    loading.remove();
+    addMsg("bot", "❌ 發生錯誤：" + e.message + "（請檢查 API Key 是否正確、是否額度）");
+  }finally{
+    sendBtn.disabled = false;
+  }
+}
+
+sendBtn.addEventListener("click", ask);
+inputBox.addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); ask(); } });
+</script>
+</body>
+</html>
